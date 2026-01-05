@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>erica 2026 麻將旺旺旺</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .calendar-day { min-height: 80px; }
+    </style>
+</head>
+<body class="bg-orange-50 text-slate-800 pb-24">
+
+    <!-- Header Section -->
+    <div class="bg-gradient-to-b from-red-700 to-red-600 text-white p-6 shadow-lg rounded-b-[2rem]">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span class="text-3xl bg-white/20 p-1 rounded-lg">🀄</span>
+                <span>erica 2026 麻將旺旺旺</span>
+            </h1>
+            <div class="text-red-100 text-xs font-bold bg-red-800/60 px-3 py-1.5 rounded-full border border-red-400/30">2026 富貴年</div>
+        </div>
+        <div class="text-center py-2 relative">
+            <p class="text-red-100 text-sm font-medium mb-1 opacity-90">實戰淨獲利</p>
+            <div id="total-balance" class="text-6xl font-bold tracking-tight drop-shadow-sm text-amber-300">+0</div>
+            <div class="grid grid-cols-4 gap-2 mt-6 max-w-sm mx-auto">
+                <div class="bg-red-800/30 rounded-lg p-2 backdrop-blur-sm">
+                    <div id="stat-total-games" class="text-lg font-bold text-white">0</div>
+                    <div class="text-[9px] text-red-200 uppercase">總場次</div>
+                </div>
+                <div class="bg-red-800/30 rounded-lg p-2 backdrop-blur-sm border border-amber-400/30">
+                    <div id="stat-total-rounds" class="text-lg font-bold text-amber-300">0</div>
+                    <div class="text-[9px] text-amber-200 uppercase">累計將數</div>
+                </div>
+                <div id="stat-win-rate-box" class="bg-red-800/30 rounded-lg p-2 backdrop-blur-sm">
+                    <div id="stat-win-rate" class="text-lg font-bold text-white">0%</div>
+                    <div class="text-[9px] text-red-200 uppercase">勝率</div>
+                </div>
+                <div class="bg-red-800/30 rounded-lg p-2 backdrop-blur-sm">
+                    <div id="stat-last-result" class="text-lg font-bold text-white">-</div>
+                    <div class="text-[9px] text-red-200 uppercase">最新</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-md mx-auto px-4 -mt-8 space-y-6">
+        <!-- Deposit Summary -->
+        <div class="bg-white rounded-2xl shadow-md p-4 flex justify-between items-center border-l-4 border-amber-500">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-100 p-2.5 rounded-full text-amber-600"><i data-lucide="wallet"></i></div>
+                <div>
+                    <p class="text-xs text-slate-400 font-medium">累計儲值紀錄</p>
+                    <p id="total-deposited" class="text-xl font-bold text-slate-700">$0</p>
+                </div>
+            </div>
+            <button onclick="switchRecordType('deposit')" class="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg border border-amber-200">去儲值</button>
+        </div>
+
+        <!-- Record Form -->
+        <div id="record-form-container" class="bg-white rounded-2xl shadow-xl p-5 border border-red-50">
+            <div class="flex bg-slate-100 p-1 rounded-xl mb-5">
+                <button id="tab-game" onclick="switchRecordType('game')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 bg-white text-red-600 shadow-sm"><i data-lucide="trophy" class="w-4"></i> 實戰輸贏</button>
+                <button id="tab-deposit" onclick="switchRecordType('deposit')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 text-slate-400"><i data-lucide="smartphone" class="w-4"></i> 線上儲值</button>
+            </div>
+
+            <form id="record-form" class="space-y-4">
+                <div id="game-win-loss-toggle" class="flex gap-2 mb-2">
+                    <button type="button" id="btn-win" onclick="setIsWin(true)" class="flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all border-red-500 bg-red-50 text-red-600">贏大錢</button>
+                    <button type="button" id="btn-loss" onclick="setIsWin(false)" class="flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all border-slate-100 bg-white text-slate-400">繳學費</button>
+                </div>
+
+                <div id="deposit-info" class="hidden bg-amber-50 text-amber-800 text-xs p-3 rounded-lg text-center mb-2 border border-amber-100">紀錄線上儲值，系統自動結算。</div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label id="amount-label" class="text-xs text-slate-400 font-medium ml-1">金額</label>
+                        <div class="relative">
+                            <i data-lucide="dollar-sign" class="absolute left-3 top-3.5 text-slate-400 w-4"></i>
+                            <input type="number" id="input-amount" placeholder="0" class="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 font-mono text-lg font-bold" required />
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-400 font-medium ml-1">日期</label>
+                        <input type="date" id="input-date" class="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium" required />
+                    </div>
+                </div>
+
+                <div id="field-rounds" class="space-y-1">
+                    <label class="text-xs text-slate-400 font-medium ml-1">將數</label>
+                    <div class="relative">
+                        <i data-lucide="hash" class="absolute left-3 top-3.5 text-slate-400 w-4"></i>
+                        <input type="number" id="input-rounds" value="1" class="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500" min="1" />
+                    </div>
+                </div>
+
+                <div id="field-jkopay" class="hidden grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-xs text-amber-600 font-bold ml-1">街口餘額</label>
+                        <div class="relative">
+                            <i data-lucide="wallet" class="absolute left-3 top-3.5 text-amber-400 w-4"></i>
+                            <input type="number" id="input-jko" placeholder="0" class="w-full pl-9 pr-4 py-3 bg-amber-50/50 border border-amber-100 rounded-xl font-mono text-sm" />
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-400 font-medium ml-1">總結</label>
+                        <div id="display-total" class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-mono text-lg font-bold">$0</div>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-400 font-medium ml-1">備註</label>
+                    <input type="text" id="input-note" placeholder="備註" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full py-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] bg-gradient-to-r from-red-600 to-rose-600">確認記錄</button>
+            </form>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-between border-b border-slate-200 px-2">
+            <div class="flex gap-4">
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="pb-2 text-sm font-bold relative text-red-600 border-b-2 border-red-600">走勢</button>
+                <button onclick="switchView('calendar')" id="nav-calendar" class="pb-2 text-sm font-bold relative text-slate-400 flex items-center gap-1"><i data-lucide="calendar" class="w-3.5"></i>日曆</button>
+            </div>
+            <button onclick="switchView('history')" id="nav-history" class="pb-2 text-sm font-bold relative text-slate-400">歷史明細</button>
+        </div>
+
+        <!-- View Content Containers -->
+        <div id="view-dashboard" class="view-content">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 min-h-[250px] flex items-center justify-center">
+                <canvas id="chart-canvas" class="w-full h-full"></canvas>
+                <div id="chart-empty" class="hidden text-slate-400 text-center py-12">多打幾場牌，數據更精準！</div>
+            </div>
+        </div>
+
+        <div id="view-calendar" class="view-content hidden">
+            <div id="calendar-container"></div>
+        </div>
+
+        <div id="view-history" class="view-content hidden">
+            <div id="history-list" class="space-y-3 pb-8"></div>
+        </div>
+    </div>
+
+    <div class="text-center py-6 pb-8"><p class="text-slate-400 text-xs font-medium">✨ 財源滾滾 • 必定自摸 ✨</p></div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        // Global State
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let currentUser = null;
+        let records = [];
+        let recordType = 'game';
+        let isWin = true;
+        let currentView = 'dashboard';
+        let currentMonthDate = new Date();
+        let chartInstance = null;
+
+        // Sound Logic
+        const playSound = (type) => {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'win') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523, now); osc.frequency.exponentialRampToValueAtTime(1046, now+0.1);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3);
+                osc.start(now); osc.stop(now+0.3);
+            } else if (type === 'loss') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(220, now); osc.frequency.exponentialRampToValueAtTime(110, now+0.2);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3);
+                osc.start(now); osc.stop(now+0.3);
+            } else if (type === 'deposit') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.2);
+                osc.start(now); osc.stop(now+0.2);
+            }
+        };
+
+        // UI Helpers
+        window.setIsWin = (val) => {
+            isWin = val;
+            const btnWin = document.getElementById('btn-win');
+            const btnLoss = document.getElementById('btn-loss');
+            const btnSubmit = document.getElementById('btn-submit');
+            if (isWin) {
+                btnWin.className = 'flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all border-red-500 bg-red-50 text-red-600';
+                btnLoss.className = 'flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all border-slate-100 bg-white text-slate-400';
+                btnSubmit.className = 'w-full py-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] bg-gradient-to-r from-red-600 to-rose-600';
+            } else {
+                btnWin.className = 'flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all border-slate-100 bg-white text-slate-400';
+                btnLoss.className = 'flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all border-emerald-500 bg-emerald-50 text-emerald-600';
+                btnSubmit.className = 'w-full py-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] bg-gradient-to-r from-emerald-600 to-teal-600';
+            }
+        };
+
+        window.switchRecordType = (type) => {
+            recordType = type;
+            const tabGame = document.getElementById('tab-game');
+            const tabDeposit = document.getElementById('tab-deposit');
+            const gameToggle = document.getElementById('game-win-loss-toggle');
+            const depositInfo = document.getElementById('deposit-info');
+            const amountLabel = document.getElementById('amount-label');
+            const fieldRounds = document.getElementById('field-rounds');
+            const fieldJko = document.getElementById('field-jkopay');
+            const btnSubmit = document.getElementById('btn-submit');
+
+            if (type === 'game') {
+                tabGame.className = 'flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 bg-white text-red-600 shadow-sm';
+                tabDeposit.className = 'flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 text-slate-400';
+                gameToggle.classList.remove('hidden');
+                depositInfo.classList.add('hidden');
+                fieldRounds.classList.remove('hidden');
+                fieldJko.classList.add('hidden');
+                amountLabel.innerText = "金額";
+                setIsWin(isWin);
+            } else {
+                tabGame.className = 'flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 text-slate-400';
+                tabDeposit.className = 'flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 bg-white text-amber-600 shadow-sm';
+                gameToggle.classList.add('hidden');
+                depositInfo.classList.remove('hidden');
+                fieldRounds.classList.add('hidden');
+                fieldJko.classList.remove('hidden');
+                amountLabel.innerText = "儲值金額";
+                btnSubmit.className = 'w-full py-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] bg-gradient-to-r from-amber-500 to-orange-500';
+            }
+        };
+
+        window.switchView = (view) => {
+            currentView = view;
+            ['dashboard', 'calendar', 'history'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                const nav = document.getElementById(`nav-${v}`);
+                nav.className = 'pb-2 text-sm font-bold relative text-slate-400';
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`nav-${view}`).className = 'pb-2 text-sm font-bold relative text-red-600 border-b-2 border-red-600';
+            if (view === 'calendar') renderCalendar();
+            if (view === 'dashboard') renderChart();
+        };
+
+        // Firebase Auth
+        signInAnonymously(auth).catch(console.error);
+        onAuthStateChanged(auth, user => {
+            currentUser = user;
+            if (user) {
+                const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'mahjong_records');
+                onSnapshot(colRef, snapshot => {
+                    records = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    records.sort((a, b) => new Date(b.date) - new Date(a.date) || b.createdAt?.seconds - a.createdAt?.seconds);
+                    updateStats();
+                    renderHistory();
+                    if (currentView === 'calendar') renderCalendar();
+                    if (currentView === 'dashboard') renderChart();
+                });
+            }
+        });
+
+        // Form Submit
+        document.getElementById('record-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+            const amount = parseInt(document.getElementById('input-amount').value);
+            const dateStr = document.getElementById('input-date').value;
+            const noteVal = document.getElementById('input-note').value;
+
+            let data = {
+                type: recordType,
+                date: dateStr,
+                createdAt: serverTimestamp(),
+                amount: 0
+            };
+
+            if (recordType === 'game') {
+                data.amount = isWin ? amount : -amount;
+                data.rounds = parseInt(document.getElementById('input-rounds').value || 1);
+                data.note = noteVal || '朋友局';
+                playSound(isWin ? 'win' : 'loss');
+            } else {
+                const jko = parseInt(document.getElementById('input-jko').value || 0);
+                data.amount = amount;
+                data.jkopayBalance = jko;
+                data.totalSummary = amount + jko;
+                data.note = noteVal || '線上儲值';
+                playSound('deposit');
+            }
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'mahjong_records'), data);
+                e.target.reset();
+                document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+                switchView('history');
+            } catch (err) { console.error(err); }
+        };
+
+        window.deleteRecord = async (id) => {
+            if (confirm('確定刪除？')) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'mahjong_records', id));
+            }
+        };
+
+        // JKO Realtime Calc
+        document.getElementById('input-amount').oninput = updateJkoTotal;
+        document.getElementById('input-jko').oninput = updateJkoTotal;
+        function updateJkoTotal() {
+            if (recordType === 'deposit') {
+                const a = parseInt(document.getElementById('input-amount').value || 0);
+                const j = parseInt(document.getElementById('input-jko').value || 0);
+                document.getElementById('display-total').innerText = `$${(a + j).toLocaleString()}`;
+            }
+        }
+
+        // Render Logic
+        function updateStats() {
+            const gameRecs = records.filter(r => !r.type || r.type === 'game');
+            const totalBal = gameRecs.reduce((s, r) => s + (r.amount || 0), 0);
+            const totalRounds = gameRecs.reduce((s, r) => s + (r.rounds || 0), 0);
+            const winCount = gameRecs.filter(r => r.amount > 0).length;
+            const winRate = gameRecs.length > 0 ? ((winCount / gameRecs.length) * 100).toFixed(1) : 0;
+            const totalDep = records.filter(r => r.type === 'deposit').reduce((s, r) => s + (r.amount || 0), 0);
+
+            const elBal = document.getElementById('total-balance');
+            elBal.innerText = (totalBal >= 0 ? '+' : '') + totalBal.toLocaleString();
+            elBal.className = `text-6xl font-bold tracking-tight drop-shadow-sm ${totalBal >= 0 ? 'text-amber-300' : 'text-emerald-200'}`;
+            
+            document.getElementById('stat-total-games').innerText = gameRecs.length;
+            document.getElementById('stat-total-rounds').innerText = totalRounds;
+            document.getElementById('stat-win-rate').innerText = winRate + '%';
+            document.getElementById('total-deposited').innerText = `$${totalDep.toLocaleString()}`;
+
+            const last = records[0];
+            document.getElementById('stat-last-result').innerText = last ? (last.type === 'deposit' ? '儲' : (last.amount > 0 ? '贏' : '輸')) : '-';
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = records.map(rec => `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center">
+                    <div class="flex items-center gap-4 overflow-hidden">
+                        <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-lg shadow-sm ${rec.type === 'deposit' ? 'bg-amber-100 text-amber-600' : (rec.amount > 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600')}">
+                            ${rec.type === 'deposit' ? '<i data-lucide="smartphone" class="w-4"></i>' : (rec.amount > 0 ? '贏' : '輸')}
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-base font-bold font-mono ${rec.type === 'deposit' ? 'text-slate-700' : (rec.amount > 0 ? 'text-red-600' : 'text-emerald-600')}">${rec.amount > 0 && rec.type !== 'deposit' ? '+' : ''}${rec.amount.toLocaleString()}</span>
+                                <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">${rec.type === 'deposit' ? '儲值' : rec.rounds + '將'}</span>
+                            </div>
+                            <div class="flex flex-col text-[10px] text-slate-400 mt-0.5">
+                                <div class="flex gap-1 items-center"><span>${rec.date}</span><span>•</span><span class="truncate max-w-[120px] font-medium text-slate-500">${rec.note}</span></div>
+                                ${rec.type === 'deposit' ? `<div class="text-amber-600 font-medium mt-0.5">總結：$${rec.totalSummary?.toLocaleString()}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="deleteRecord('${rec.id}')" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderChart() {
+            const gameRecs = records.filter(r => !r.type || r.type === 'game').reverse();
+            const canvas = document.getElementById('chart-canvas');
+            const empty = document.getElementById('chart-empty');
+            
+            if (gameRecs.length < 2) {
+                canvas.classList.add('hidden'); empty.classList.remove('hidden'); return;
+            }
+            canvas.classList.remove('hidden'); empty.classList.add('hidden');
+
+            let currentSum = 0;
+            const data = gameRecs.map(r => { currentSum += r.amount; return { x: r.date.slice(5), y: currentSum }; });
+
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.x),
+                    datasets: [{
+                        label: '累計獲利',
+                        data: data.map(d => d.y),
+                        borderColor: '#dc2626',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        window.changeMonth = (delta) => {
+            currentMonthDate.setMonth(currentMonthDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendar-container');
+            const year = currentMonthDate.getFullYear();
+            const month = currentMonthDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const dataMap = {};
+            records.forEach(r => {
+                if (!dataMap[r.date]) dataMap[r.date] = { g: 0, d: 0, r: 0 };
+                if (r.type === 'deposit') dataMap[r.date].d += r.amount;
+                else { dataMap[r.date].g += r.amount; dataMap[r.date].r += (r.rounds || 0); }
+            });
+
+            let html = `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="flex items-center justify-between p-4 bg-red-600 text-white">
+                        <button onclick="changeMonth(-1)" class="p-1 hover:bg-white/20 rounded-full"><i data-lucide="chevron-left"></i></button>
+                        <div class="font-bold text-lg">${year}年 ${month+1}月</div>
+                        <button onclick="changeMonth(1)" class="p-1 hover:bg-white/20 rounded-full"><i data-lucide="chevron-right"></i></button>
+                    </div>
+                    <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+                        ${['日','一','二','三','四','五','六'].map(d => `<div class="text-center text-[10px] text-slate-400 font-bold py-2">${d}</div>`).join('')}
+                    </div>
+                    <div class="grid grid-cols-7">`;
+
+            for (let i = 0; i < firstDay; i++) html += `<div class="calendar-day bg-slate-50/50 border-b border-r border-slate-100"></div>`;
+            for (let d = 1; d <= lastDay; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayData = dataMap[dateStr];
+                const isToday = dateStr === todayStr;
+                html += `
+                    <div class="calendar-day border-b border-r border-slate-100 p-1 flex flex-col items-center transition-colors ${isToday ? 'bg-red-50' : 'bg-white'}">
+                        <span class="text-[10px] font-medium mb-1 w-4 h-4 flex items-center justify-center rounded-full ${isToday ? 'bg-red-600 text-white' : 'text-slate-400'}">${d}</span>
+                        ${dayData ? `
+                            <div class="flex flex-col items-center w-full gap-0.5 overflow-hidden">
+                                ${dayData.g !== 0 ? `<span class="text-[9px] font-bold truncate ${dayData.g > 0 ? 'text-red-600' : 'text-emerald-600'}">${dayData.g > 0 ? '+' : ''}${dayData.g}</span>` : ''}
+                                ${dayData.r > 0 ? `<span class="text-[8px] text-slate-400">${dayData.r}將</span>` : ''}
+                                ${dayData.d > 0 ? `<div class="flex items-center gap-0.5"><div class="w-1 h-1 rounded-full bg-amber-400"></div><span class="text-[8px] text-amber-600 font-medium">${dayData.d}</span></div>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>`;
+            }
+            html += `</div></div>`;
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // Init Form Date
+        document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+        lucide.createIcons();
+
+    </script>
+</body>
+</html>
